@@ -827,3 +827,5 @@ app/etc/modules/Idev_OneStepCheckout.xml
 /skin/frontend/base/default/images/tig_buckaroo3extended/
 /skin/frontend/base/default/js/TIG/Buckaroo3Extended/
 /skin/adminhtml/default/default/js/TIG/Buckaroo3Extended/
+/app/code/community/BL/
+/skin/adminhtml/default/default/bl/
