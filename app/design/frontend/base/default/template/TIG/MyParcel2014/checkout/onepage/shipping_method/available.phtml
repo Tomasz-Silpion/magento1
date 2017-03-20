@@ -42,7 +42,17 @@ if (isset($address) && is_array($address) && key_exists('country', $address)) {
     $country = false;
 }
 
-$useMyParcel = ($_shippingRateGroups && $country == 'NL');
+// Check if mailbox must show with other options
+if (
+    $helper->getPackageType($this->getQuote()->getItemsCollection(), $country, false, false, true) == 2 &&
+    $helper->getConfig('mailbox_with_other_options', 'mailbox') == '0'
+) {
+    $useMyParcel = false;
+    $onlyMailbox = true;
+} else {
+    $useMyParcel = ($_shippingRateGroups && $country == 'NL');
+    $onlyMailbox = false;
+}
 
 /**
  * Hide and toggle MyParcel options (used by parnis.nl). Hidden field in the settings.
@@ -50,7 +60,10 @@ $useMyParcel = ($_shippingRateGroups && $country == 'NL');
  */
 $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true : false;
 ?>
-<script>myParcelToggleOptions = '<?php echo $toggleOptions;?>'</script>
+<script>
+    var myParcelToggleOptions = '<?php echo $toggleOptions;?>';
+    var lastPrice = 0;
+</script>
 <?php if (!$_shippingRateGroups): ?>
     <p><?php echo $this->__('Sorry, no quotes are available for this order at this time.') ?></p>
 <?php else: ?>
@@ -68,8 +81,20 @@ $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true 
                         <?php if ($_rate->getCode() != $lastRate): ?>
                             <?php $lastRate = $_rate->getCode(); ?>
                             <?php $shippingCodePrice[] = "'" . $_rate->getCode() . "':" . (float)$_rate->getPrice(); ?>
-                            <li style="<?php if ($code == 'myparcel') echo $_rate->getMethod() != 'flatrate' && $_rate->getMethod() != 'tablerate' ? 'display:none' : '';?>">
-                                <?php if ($_rate->getErrorMessage()): ?>
+                            <li style="
+                            <?php if ($code == 'myparcel') {
+                                if ($onlyMailbox) {
+                                    if ($_rate->getMethod() != 'mailbox') {
+                                        echo 'display:none';
+                                    }
+                                } else {
+                                    if ($_rate->getMethod() != 'flatrate' && $_rate->getMethod() != 'tablerate') {
+                                        echo 'display:none';
+                                    }
+                                }
+                            }
+                            ?>">
+                            <?php if ($_rate->getErrorMessage()): ?>
                                     <ul class="messages">
                                         <li class="error-msg">
                                             <ul>
@@ -84,25 +109,25 @@ $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true 
                                                                     id="s_method_<?php echo $_rate->getCode() ?>"
                                                                     checked="checked"/></span>
                                 <?php else: ?>
-                                <input name="shipping_method" type="radio" value="<?php echo $_rate->getCode() ?>"
-                                       id="s_method_<?php echo $_rate->getCode() ?>"<?php if ($_rate->getCode() === $this->getAddressShippingMethod()) echo ' checked="checked"' ?>
-                                       class="radio <?php
-                                       if ($code == 'myparcel') {
-                                           if ($_rate->getMethod() != 'flatrate' && $_rate->getMethod() != 'tablerate') {
-                                               echo 'myparcel_method myparcel_extra_method';
-                                           } else {
-                                               echo 'myparcel_method myparcel_base_method';
-                                           }
-                                       }
-                                       ?>"/>
+                                    <input name="shipping_method" type="radio" value="<?php echo $_rate->getCode() ?>"
+                                           id="s_method_<?php echo $_rate->getCode() ?>"<?php if ($_rate->getCode() === $this->getAddressShippingMethod()) echo ' checked="checked"' ?>
+                                           class="radio <?php
+                                               if ($code == 'myparcel') {
+                                                   if ($_rate->getMethod() != 'flatrate' && $_rate->getMethod() != 'tablerate') {
+                                                       echo 'myparcel_method myparcel_extra_method';
+                                                   } else {
+                                                       echo 'myparcel_method myparcel_base_method';
+                                                   }
+                                               }
+                                           ?>"/>
 
-                                <?php if ($_rate->getCode() === $this->getAddressShippingMethod()): ?>
-                                    <script type="text/javascript">
-                                        //<![CDATA[
-                                        lastPrice = <?php echo (float)$_rate->getPrice(); ?>;
-                                        //]]>
-                                    </script>
-                                <?php endif; ?>
+                                    <?php if ($_rate->getCode() === $this->getAddressShippingMethod()): ?>
+                                        <script type="text/javascript">
+                                            //<![CDATA[
+                                            lastPrice = <?php echo (float)$_rate->getPrice(); ?>;
+                                            //]]>
+                                        </script>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                                     <label for="s_method_<?php echo $_rate->getCode() ?>">
                                         <?php echo $this->escapeHtml($_rate->getMethodTitle()) ?>
@@ -124,7 +149,7 @@ $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true 
 
             <?php if ($code == 'myparcel' && $useMyParcel): ?>
                 <div id="mypa-load" style="<?php echo $toggleOptions && $_rate->getCode() !== $this->getAddressShippingMethod() ? 'display: none;' : ''; ?>">
-                    <iframe id="myparcel-iframe" src="<?php echo Mage::getUrl('',array('_secure'=>true));?>/myparcel2014/checkout/checkout_options" frameborder="0" scrolling="auto" style="width: 100%;" >Bezig met laden...</iframe>
+                    <iframe id="myparcel-iframe" src="<?php echo str_replace('/?___SID=S', '', Mage::getUrl('myparcel2014/checkout/checkout_options',array('_secure'=>false)));?>" frameborder="0" scrolling="auto" style="width: 100%;" >Bezig met laden...</iframe>
                     <input style="display: none;" id="mypa-input" name="mypa-post-nl-data">
                     <input style="display: none;" type="checkbox" name='mypa-signed' id="mypa-signed">
                     <input style="display: none;" type="checkbox" name='mypa-recipient-only' id="mypa-recipient-only">
@@ -169,14 +194,16 @@ $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true 
         });
         //]]>
     </script>
-    <?php if ($useMyParcel) : ?>
-        <script>
-            mypajQuery(document).ready(function () {
+    <script>
+        mypajQuery(document).ready(function () {
+            <?php if ($useMyParcel) : ?>
                 iframeLoaded();
                 mypajQuery('#mypa-input').on('change', (function () {
                     iframeLoaded()
                 }));
-            });
-        </script>
-    <?php endif; ?>
+            <?php elseif ($onlyMailbox):?>
+                mypajQuery('#s_method_myparcel_mailbox').prop("checked", true);
+            <?php endif; ?>
+        });
+    </script>
 <?php endif; ?>

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TIG_MyParcel2014>
-            <version>1.10.4</version>
+            <version>1.11.3</version>
         </TIG_MyParcel2014>
     </modules>
     <global>
@@ -55,6 +55,15 @@
             </tig_myparcel_setup>
         </resources>
         <events>
+            <checkout_controller_onepage_save_shipping_method>
+                <observers>
+                    <tig_myparcel_shipping_method_save_after>
+                        <type>model</type>
+                        <class>tig_myparcel/observer_saveShippingMethod</class>
+                        <method>saveExtaOptions</method>
+                    </tig_myparcel_shipping_method_save_after>
+                </observers>
+            </checkout_controller_onepage_save_shipping_method>
             <sales_order_shipment_save_after>
                 <observers>
                     <tig_myparcel_shipment_save_after>
@@ -241,6 +250,7 @@
                 <always_myparcel>1</always_myparcel>
                 <pakjegemak_use_shipment_address>1</pakjegemak_use_shipment_address>
                 <myparcel_shipping_methods>tig_myparcel_flatrate,myparcel_flatrate,tig_myparcel_tablerate,myparcel_tablerate,tig_myparcel_pakjegemak,myparcel_pakjegemak</myparcel_shipping_methods>
+                <use_filter>0</use_filter>
                 <ssl_handshake>0</ssl_handshake>
             </general>
             <shipment>
@@ -251,7 +261,6 @@
                 <insured_50>0</insured_50>
                 <insured_250>0</insured_250>
                 <insured_500>0</insured_500>
-                <automatically_next_status>1</automatically_next_status>
                 <customs_type>1</customs_type>
                 <customs_hstariffnr></customs_hstariffnr>
             </shipment>
@@ -273,6 +282,9 @@
                 <signature_fee>0.34</signature_fee>
                 <signature_and_only_recipient_fee>0.42</signature_and_only_recipient_fee>
             </delivery>
+            <mailbox>
+                <mailbox_with_other_options>1</mailbox_with_other_options>
+            </mailbox>
             <morningdelivery>
                 <morningdelivery_active>1</morningdelivery_active>
                 <morningdelivery_fee>10</morningdelivery_fee>

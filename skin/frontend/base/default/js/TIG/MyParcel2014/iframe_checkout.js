@@ -89,6 +89,19 @@ window.mypa.settings = {};
         };
         externalJQuery.ajax(ajaxOptions);
 
+
+        parent.hideDays = function () {
+            if (window.mypa.settings.deliverydays_window > 1) {
+                $('#mypa-date-slider-left, #mypa-date-slider-right, #mypa-tabs-container').slideUp();
+            }
+        };
+
+        parent.showDays = function () {
+            if (window.mypa.settings.deliverydays_window > 1) {
+                $('#mypa-date-slider-left, #mypa-date-slider-right, #mypa-tabs-container').slideDown();
+            }
+        };
+
     };
 
 
