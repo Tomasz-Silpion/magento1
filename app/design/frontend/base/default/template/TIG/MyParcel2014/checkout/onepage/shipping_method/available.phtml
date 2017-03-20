@@ -160,10 +160,6 @@ $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true 
     </dl>
     <script type="text/javascript">
         //<![CDATA[
-        mypajQuery('#s_method_myparcel_mailbox').prop("checked", true).click().trigger('change');
-        setTimeout(function(){
-            mypajQuery('#s_method_myparcel_mailbox').prop("checked", true).click().trigger('change');
-        }, 3000);
         if (typeof quoteBaseGrandTotal == 'undefined') {
             var quoteBaseGrandTotal;
         }
