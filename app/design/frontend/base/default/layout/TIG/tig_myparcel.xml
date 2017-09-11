@@ -56,6 +56,31 @@
             </action>
         </reference>
     </opc_index_index>
+    
+    <!-- IWD checkout suite -->
+    <iwd_opc_index_index>
+        <reference name="head">
+            <action method="addItem">
+                <type>skin_js</type>
+                <file>js/TIG/MyParcel2014/jquery-myparcel.min.js</file>
+            </action>
+            <action method="addItem">
+                <type>skin_js</type>
+                <file>js/TIG/MyParcel2014/checkout_type/iwd_opc_index_index.js</file>
+            </action>
+            <action method="addItem">
+                <type>skin_js</type>
+                <file>js/TIG/MyParcel2014/checkout.js</file>
+            </action>
+        </reference>
+
+        <reference name="iwd_opc.onepage.shipping.method">
+            <action method="setTemplate">
+                <template>TIG/MyParcel2014/checkout/onepage/shipping_method/available.phtml</template>
+            </action>
+        </reference>
+ 
+    </iwd_opc_index_index>
 
     <!-- Idev OneStepCheckout-->
     <onestepcheckout_index_index>

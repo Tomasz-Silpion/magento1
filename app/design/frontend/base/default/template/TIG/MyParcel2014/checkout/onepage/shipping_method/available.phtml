@@ -1,35 +1,10 @@
 <?php
 /**
- * Magento
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE_AFL.txt.
- * It is also available through the world-wide-web at this URL:
- * http://opensource.org/licenses/afl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade Magento to newer
- * versions in the future. If you wish to customize Magento for your
- * needs please refer to http://www.magento.com for more information.
- *
- * @category    design
- * @package     base_default
- * @copyright   Copyright (c) 2006-2016 X.commerce, Inc. and affiliates (http://www.magento.com)
- * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ * @var $this IWD_Opc_Block_Onepage_Shipping_Method
  */
 ?>
 <?php
-/**
- * @var $this Mage_Checkout_Block_Onepage_Shipping_Method_Available
- * @var TIG_MyParcel2014_Helper_AddressValidation $helper
- */
-$_shippingRateGroups = $this->getShippingRates();
+
 $helper = Mage::helper('tig_myparcel/addressValidation');
 
 $hideDays =     $helper->getConfig('deliverydays_window', 'checkout') == '1' ? true : false;
@@ -59,136 +34,161 @@ if (
  * Example: https://monosnap.com/file/gJ9DoOhbJF6p0qMit0NmjCMjNhP8rM
  */
 $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true : false;
+
+
+$shippingRateGroups = $this->getShippingRates();
+$selectedShippingRateGroup = '';
+$selectedShippingRate = '';
+$selectedShippingMethod = '';
+if ($this->getAddressShippingMethod()) {
+    $selectedShippingMethod = $this->getAddressShippingMethod();
+    $selectedShippingMethodArr = explode('_', $this->getAddressShippingMethod());
+    if (!empty($selectedShippingMethodArr[0]) && !empty($selectedShippingMethodArr[1])) {
+        $selectedShippingRateGroup = $selectedShippingMethodArr[0];
+        $selectedShippingRate = $selectedShippingMethodArr[1];
+    }
+} else {
+    $selectedShippingRateGroup = $this->getShippingRateGroup();
+}
+
 ?>
-<script>
-    var myParcelToggleOptions = '<?php echo $toggleOptions;?>';
-    var lastPrice = 0;
-</script>
-<?php if (!$_shippingRateGroups): ?>
-    <p><?php echo $this->__('Sorry, no quotes are available for this order at this time.') ?></p>
-<?php else: ?>
-    <dl class="sp-methods shipment-methods">
-        <?php $shippingCodePrice = array(); ?>
-        <?php $_sole = count($_shippingRateGroups) == 1;
-        foreach ($_shippingRateGroups as $code => $_rates): ?>
-            <?php $hideRate = $code == 'myparcel' && $useMyParcel && !$toggleOptions; ?>
-            <dt style="<?php echo $hideRate ? 'display:none;' : '';?>" class="<?php echo $code . '_holder'; ?>"><?php echo $this->escapeHtml($this->getCarrierName($code)) ?></dt>
-            <dd style="<?php echo $hideRate ? 'display:none;' : '';?>" class="<?php echo $code . '_holder'; ?>">
-                <ul>
-                    <?php $_sole = $_sole && count($_rates) == 1;
-                    $lastRate = null;
-                    foreach ($_rates as $_rate): ?>
-                        <?php if ($_rate->getCode() != $lastRate): ?>
-                            <?php $lastRate = $_rate->getCode(); ?>
-                            <?php $shippingCodePrice[] = "'" . $_rate->getCode() . "':" . (float)$_rate->getPrice(); ?>
-                            <li style="
-                            <?php if ($code == 'myparcel') {
-                                if ($onlyMailbox) {
-                                    if ($_rate->getMethod() != 'mailbox') {
-                                        echo 'display:none';
-                                    }
-                                } else {
-                                    if ($_rate->getMethod() != 'flatrate' && $_rate->getMethod() != 'tablerate') {
-                                        echo 'display:none';
-                                    }
-                                }
+<div id="iwd_opc_shipping_load_container">
+    <form class="iwd_opc_form" id="iwd_opc_shipping_method_form">
+        <?php if (!$shippingRateGroups) {
+            $shippingUnavailableLabel = 'Shipping Unavailable';
+            if ($this->getQuote()->getIsVirtual()) {
+                $shippingUnavailableLabel = 'Order Does Not Require Shipping';
+            } elseif (!$this->getAddress()->getCountryId() || !$this->getAddress()->getCity()) {
+                $shippingUnavailableLabel = 'Shipping Address Required';
+            }
+            ?>
+            <div class="iwd_opc_universal_wrapper">
+                <select disabled="disabled"
+                        class="iwd_opc_field iwd_opc_select required-entry"
+                        title="<?php echo $this->escapeHtml($this->__($shippingUnavailableLabel)); ?>"
+                        name="iwd_opc_shipping_method_unavailable">
+                    <option value=""><?php echo $this->escapeHtml($this->__($shippingUnavailableLabel)); ?></option>
+                </select>
+            </div>
+        <?php } else {
+            $shippingGroupSelectIsHidden = false;
+            if ($selectedShippingMethod) {
+                foreach ($shippingRateGroups as $code => $rates) {
+                    foreach ($rates as $rate) {
+                        if (count($rates) === 1 && $rate->getCode() === $selectedShippingMethod) {
+                            $shippingGroupSelectIsHidden = true;
+                        }
+                    }
+                }
+            }
+            ?>
+            <div class="iwd_opc_universal_wrapper"
+                <?php if ($shippingGroupSelectIsHidden) { ?>
+                    style="display: none;"
+                <?php } ?>
+                 id="iwd_opc_shipping_method_group">
+                <select data-can-unselect="true"
+                        class="required-entry iwd_opc_field iwd_opc_select"
+                        name="iwd_opc_shipping_method_group_select"
+                        id="iwd_opc_shipping_method_group_select"
+                        title="<?php echo $this->escapeHtml($this->__('Select Shipping Rate Group')); ?>">
+                    <option></option>
+                    <?php foreach ($shippingRateGroups as $code => $rates) { ?>
+                        <option value="<?php echo $this->escapeHtml($code); ?>"
+                            <?php if ($code == $selectedShippingRateGroup) { ?>
+                                selected="selected"
+                            <?php } ?>>
+                            <?php echo $this->escapeHtml($this->getCarrierName($code)); ?>
+                        </option>
+                    <?php } ?>
+                </select>
+            </div>
+            <div id="iwd_opc_shipping_rates">
+                <?php foreach ($shippingRateGroups as $code => $rates) {
+                    $isSingleRate = count($rates) === 1;
+                    ?>
+                    <div data-group-code="<?php echo $this->escapeHtml($code); ?>"
+                         class="iwd_opc_universal_wrapper iwd_opc_shipping_one_rate_group
+                     <?php if ($code == $selectedShippingRateGroup) { ?>
+                        selected
+                     <?php } ?>
+                "
+                        <?php if ($code != $selectedShippingRateGroup) { ?>
+                            style="display: none;"
+                        <?php } ?>
+                    >
+                        <?php
+                        $isSelectDisabled = false;
+                        foreach ($rates as $rate) {
+                            if ($rate->getErrorMessage()) {
+                                $isSelectDisabled = true;
                             }
-                            ?>">
-                            <?php if ($_rate->getErrorMessage()): ?>
-                                    <ul class="messages">
-                                        <li class="error-msg">
-                                            <ul>
-                                                <li><?php echo $this->escapeHtml($_rate->getErrorMessage()) ?></li>
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                <?php else: ?>
-                                <?php if ($_sole) : ?>
-                                    <span class="no-display"><input name="shipping_method" type="radio"
-                                                                    value="<?php echo $_rate->getCode() ?>"
-                                                                    id="s_method_<?php echo $_rate->getCode() ?>"
-                                                                    checked="checked"/></span>
-                                <?php else: ?>
-                                    <input name="shipping_method" type="radio" value="<?php echo $_rate->getCode() ?>"
-                                           id="s_method_<?php echo $_rate->getCode() ?>"<?php if ($_rate->getCode() === $this->getAddressShippingMethod()) echo ' checked="checked"' ?>
-                                           class="radio <?php
-                                               if ($code == 'myparcel') {
-                                                   if ($_rate->getMethod() != 'flatrate' && $_rate->getMethod() != 'tablerate') {
-                                                       echo 'myparcel_method myparcel_extra_method';
-                                                   } else {
-                                                       echo 'myparcel_method myparcel_base_method';
-                                                   }
-                                               }
-                                           ?>"/>
-
-                                    <?php if ($_rate->getCode() === $this->getAddressShippingMethod()): ?>
-                                        <script type="text/javascript">
-                                            //<![CDATA[
-                                            lastPrice = <?php echo (float)$_rate->getPrice(); ?>;
-                                            //]]>
-                                        </script>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                                    <label for="s_method_<?php echo $_rate->getCode() ?>">
-                                        <?php echo $this->escapeHtml($_rate->getMethodTitle()) ?>
-                                        <?php if ($code != 'myparcel' || !$toggleOptions):?>
-                                            <?php $_excl = $this->getShippingPrice($_rate->getPrice(), $this->helper('tax')->displayShippingPriceIncludingTax()); ?>
-                                            <?php $_incl = $this->getShippingPrice($_rate->getPrice(), true); ?>
-                                            <?php echo $_excl; ?>
-                                            <?php if ($this->helper('tax')->displayShippingBothPrices() && $_incl != $_excl): ?>
-                                                (<?php echo $this->__('Incl. Tax'); ?><?php echo $_incl; ?>)
-                                            <?php endif; ?>
-                                        <?php endif;?>
-                                    </label>
-                                <?php endif ?>
-                            </li>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </ul>
-            </dd>
-
-            <?php if ($code == 'myparcel' && $useMyParcel): ?>
-                <div id="mypa-load" style="<?php echo $toggleOptions && $_rate->getCode() !== $this->getAddressShippingMethod() ? 'display: none;' : ''; ?>">
+                        }
+                        ?>
+                        <select data-can-unselect="true"
+                            <?php if ($isSelectDisabled) { ?>
+                                disabled="disabled"
+                            <?php } ?>
+                                title="<?php echo $this->escapeHtml($this->__('Select Shipping Rate')); ?>"
+                                class="required-entry iwd_opc_field iwd_opc_select iwd_opc_shipping_one_rate"
+                                name="iwd_opc_shipping_method[<?php echo $this->escapeHtml($code); ?>]">
+                            <?php if (!$isSelectDisabled) { ?>
+                                <option></option>
+                            <?php } ?>
+                            <?php foreach ($rates as $rate) {
+                                $isSelected = $selectedShippingMethod == $rate->getCode();
+                                $price = $this->getShippingPrice(
+                                    $rate->getPrice(),
+                                    $this->helper('tax')->displayShippingPriceIncludingTax()
+                                );
+                                $priceInclTax = $this->getShippingPrice($rate->getPrice(), true);
+                                if ($this->helper('tax')->displayShippingBothPrices() && $priceInclTax != $price) {
+                                    $price .= ' (' . $this->__('Incl. Tax') . ' ' . $priceInclTax . ')';
+                                } ?>
+                                <option value="<?php echo(!$isSelectDisabled ? $this->escapeHtml($rate->getCode()) : ""); ?>"
+                                    <?php if ($isSelected) { ?>
+                                        selected="selected"
+                                    <?php } ?>>
+                                    <?php if ($rate->getErrorMessage()) { ?>
+                                        <?php echo $this->escapeHtml(
+                                            $this->__('Shipping method is\'t applicable.')
+                                        ); ?>
+                                    <?php } else { ?>
+                                        <?php echo $this->escapeHtml(
+                                            ($isSingleRate ? $this->getCarrierName($code) . ': ' : '') .
+                                            $rate->getMethodTitle() . ' - ' . $price
+                                        ); ?>
+                                    <?php } ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                
+                           <?php if ($code == 'myparcel' && $useMyParcel): ?>
+                <div id="mypa-load" style="<?php echo $toggleOptions && $rate->getCode() !== $this->getAddressShippingMethod() ? 'display: none;' : ''; ?>">
                     <iframe id="myparcel-iframe" src="<?php echo str_replace('/?___SID=S', '', Mage::getUrl('myparcel2014/checkout/checkout_options'));?>" frameborder="0" scrolling="auto" style="width: 100%;min-height: 200px;" >Bezig met laden...</iframe>
                     <input style="display: none;" id="mypa-input" name="mypa-post-nl-data">
                     <input style="display: none;" type="checkbox" name='mypa-signed' id="mypa-signed">
                     <input style="display: none;" type="checkbox" name='mypa-recipient-only' id="mypa-recipient-only">
                 </div>
             <?php endif; ?>
-
-        <?php endforeach; ?>
-    </dl>
+                <?php } ?>
+            </div>
+        <?php } ?>
+    </form>
     <script type="text/javascript">
-        //<![CDATA[
-        if (typeof quoteBaseGrandTotal == 'undefined') {
-            var quoteBaseGrandTotal;
-        }
-
-        <?php if (!empty($shippingCodePrice)): ?>
-        var shippingCodePrice = {<?php echo implode(',', $shippingCodePrice); ?>};
-        <?php endif; ?>
-
-        $$('input[type="radio"][name="shipping_method"]').each(function (el) {
-            Event.observe(el, 'click', function () {
-                if (el.checked == true) {
-                    var getShippingCode = el.getValue();
-                    <?php if (!empty($shippingCodePrice)): ?>
-                    var newPrice = shippingCodePrice[getShippingCode];
-                    if (!lastPrice) {
-                        lastPrice = newPrice;
-                        quoteBaseGrandTotal += newPrice;
-                    }
-                    if (newPrice != lastPrice) {
-                        quoteBaseGrandTotal += (newPrice - lastPrice);
-                        lastPrice = newPrice;
-                    }
-                    <?php endif; ?>
-                    checkQuoteBaseGrandTotal = quoteBaseGrandTotal;
-                    return false;
-                }
-            });
-        });
-        //]]>
+        var iwdOpcShippingMethodForm = new VarienForm('iwd_opc_shipping_method_form');
+        iwdOpcShippingMethodForm.validator.options = {
+            onSubmit: false,
+            stopOnFirst: false,
+            immediate: false,
+            focusOnError: false,
+            useTitles: false,
+            onFormValidate: function (result, form) {
+            },
+            onElementValidate: function (result, elm) {
+            }
+        };
     </script>
     <script>
         mypajQuery(document).ready(function () {
@@ -202,4 +202,4 @@ $toggleOptions = $helper->getConfig('toggle_options', 'checkout') == '1' ? true 
             <?php endif; ?>
         });
     </script>
-<?php endif; ?>
+</div>
